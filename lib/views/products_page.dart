@@ -11,6 +11,9 @@ class ProductsPage extends StatefulWidget {
 
 class _ProductsPageState extends State<ProductsPage> {
   late ScrollController _scrollController;
+  TextEditingController _searchController = TextEditingController();
+  String _selectedCategory = 'All';
+  List<String> categories = ['All', 'Beauty', 'Clothing', 'Furniture'];
 
   @override
   void initState() {
@@ -30,6 +33,11 @@ class _ProductsPageState extends State<ProductsPage> {
     }
   }
 
+  void _onSearchChanged() {
+    Provider.of<ProductProviders>(context, listen: false)
+        .filterProducts(_searchController.text, _selectedCategory);
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -39,6 +47,52 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Products"),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(100.0),
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search products...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  onChanged: (value) => _onSearchChanged(),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  items: categories.map((String category) {
+                    return DropdownMenuItem<String>(
+                      value: category,
+                      child: Text(category),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCategory = value!;
+                    });
+                    _onSearchChanged();
+                  },
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: Consumer<ProductProviders>(
         builder: (context, productProvider, child) {
           if (productProvider.products.isEmpty && productProvider.isLoading) {
