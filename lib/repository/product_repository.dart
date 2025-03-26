@@ -7,14 +7,16 @@ class ProductRepository {
 
   ProductRepository(this.httpService);
 
-  Future<List<Product>> getProducts() async {
+  Future<List<Product>> getProducts({int limit = 10, int skip = 0}) async {
     final response = await httpService.request(
       method: HttpMethod.get,
-      url: 'https://dummyjson.com/products',
+      url: 'https://dummyjson.com/products?limit=$limit&skip=$skip',
     );
 
-    LoggerService.logger.i('Products response: $response');
+    LoggerService.logger.i(response['products']);
 
-    return (response as List<dynamic>).map((e) => Product.fromJson(e)).toList();
+    return (response['products'] as List<dynamic>)
+        .map((e) => Product.fromJson(e))
+        .toList();
   }
 }

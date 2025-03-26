@@ -15,9 +15,9 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   void initState() {
     super.initState();
-    final productProvider =
-        Provider.of<ProductProviders>(context, listen: false);
-    productProvider.fetchProducts();
+    Future.delayed(Duration.zero, () {
+      Provider.of<ProductProviders>(context, listen: false).fetchProducts();
+    });
 
     _scrollController = ScrollController();
     _scrollController.addListener(onScroll);

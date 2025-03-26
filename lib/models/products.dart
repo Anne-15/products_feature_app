@@ -6,7 +6,7 @@ class Product {
   final double price;
   final double discountPercentage;
   final double rating;
-  final int stock;
+  final double stock;
   final List<String> tags;
   final String brand;
   final String sku;
@@ -17,7 +17,7 @@ class Product {
   final String availabilityStatus;
   final List<Review> reviews;
   final String returnPolicy;
-  final int minimumOrderQuantity;
+  final double minimumOrderQuantity;
   final Meta meta;
   final List<String> images;
   final String thumbnail;
@@ -53,14 +53,14 @@ class Product {
       title: json['title'],
       description: json['description'],
       category: json['category'],
-      price: json['price'],
-      discountPercentage: json['discountPercentage'],
-      rating: json['rating'],
-      stock: json['stock'],
+      price: json['price'].toDouble(),
+      discountPercentage: json['discountPercentage'].toDouble(),
+      rating: json['rating'].toDouble(),
+      stock: json['stock'].toDouble(),
       tags: List<String>.from(json['tags']),
       brand: json['brand'],
       sku: json['sku'],
-      weight: json['weight'],
+      weight: json['weight'].toDouble(),
       dimensions: Dimensions.fromJson(json['dimensions']),
       warrantyInformation: json['warrantyInformation'],
       shippingInformation: json['shippingInformation'],
@@ -69,7 +69,7 @@ class Product {
         json['reviews'].map((review) => Review.fromJson(review)),
       ),
       returnPolicy: json['returnPolicy'],
-      minimumOrderQuantity: json['minimumOrderQuantity'],
+      minimumOrderQuantity: json['minimumOrderQuantity'].toDouble(),
       meta: Meta.fromJson(json['meta']),
       images: List<String>.from(json['images']),
       thumbnail: json['thumbnail'],
@@ -122,9 +122,9 @@ class Dimensions {
 
   factory Dimensions.fromJson(Map<String, dynamic> json) {
     return Dimensions(
-      width: json['width'],
-      height: json['height'],
-      depth: json['depth'],
+      width: json['width'].toDouble(),
+      height: json['height'].toDouble(),
+      depth: json['depth'].toDouble(),
     );
   }
 
@@ -142,7 +142,7 @@ class Dimensions {
   }
 }
 
-class Review{
+class Review {
   final double rating;
   final String comment;
   final DateTime date;
@@ -159,7 +159,7 @@ class Review{
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      rating: json['rating'],
+      rating: json['rating'].toDouble(),
       comment: json['comment'],
       date: DateTime.parse(json['date']),
       reviewerName: json['reviewerName'],
@@ -183,7 +183,7 @@ class Review{
   }
 }
 
-class Meta{
+class Meta {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String barcode;
