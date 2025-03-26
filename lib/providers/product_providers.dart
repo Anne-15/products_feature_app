@@ -9,6 +9,8 @@ class ProductProviders extends ChangeNotifier {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   List<Product> get allProducts => products;
+  String _currentSearchQuery = '';
+  String _currentCategory = 'All';
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -43,21 +45,44 @@ class ProductProviders extends ChangeNotifier {
   }
 
   void filterProducts(String query, String category) {
-    LoggerService.logger
-        .i('Filtering products: query="$query", category="$category"');
-    filteredProducts = products.where((product) {
-      final matchesSearch =
-          product.title.toLowerCase().contains(query.toLowerCase());
-      final matchesCategory = category == 'All' || product.category == category;
+    _currentSearchQuery = query;
+    _currentCategory = category;
+    _applyFilters();
+  }
 
-      LoggerService.logger.i(
-          'Checking product: ${product.title}, matchesSearch: $matchesSearch, matchesCategory: $matchesCategory');
+  void _applyFilters() {
+    List<Product> results = List.from(products);
 
-      return matchesSearch && matchesCategory;
-    }).toList();
+    // Apply search filter if query is not empty
+    if (_currentSearchQuery.isNotEmpty) {
+      results = results.where((product) {
+        return product.title
+                .toLowerCase()
+                .contains(_currentSearchQuery.toLowerCase()) ||
+            product.description
+                .toLowerCase()
+                .contains(_currentSearchQuery.toLowerCase()) ||
+            product.brand
+                .toLowerCase()
+                .contains(_currentSearchQuery.toLowerCase());
+      }).toList();
+    }
 
-    LoggerService.logger.i('Filtered Products Count: ${filteredProducts.length}');
+    // Apply category filter if not 'All'
+    if (_currentCategory != 'All') {
+      results = results.where((product) {
+        return product.category.toLowerCase() == _currentCategory.toLowerCase();
+      }).toList();
+    }
 
+    filteredProducts = results;
+    notifyListeners();
+  }
+
+  void clearFilters() {
+    _currentSearchQuery = '';
+    _currentCategory = 'All';
+    filteredProducts = List.from(products);
     notifyListeners();
   }
 }
