@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:products_feature_app/providers/product_providers.dart';
+import 'package:products_feature_app/repository/product_repository.dart';
+import 'package:products_feature_app/services/httpService.dart';
 import 'package:products_feature_app/views/products_page.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ProductProviders(
+        productRepository: ProductRepository(HttpService()),
+      ),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
