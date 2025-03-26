@@ -9,7 +9,7 @@ class HttpService {
 
   HttpService() : client = http.Client();
 
-  Future<Map<String, dynamic>> request({
+  Future<dynamic> request({
     required HttpMethod method,
     required String url,
     Map<String, dynamic>? body,

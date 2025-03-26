@@ -49,30 +49,30 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      category: json['category'],
-      price: json['price'].toDouble(),
-      discountPercentage: json['discountPercentage'].toDouble(),
-      rating: json['rating'].toDouble(),
-      stock: json['stock'].toDouble(),
-      tags: List<String>.from(json['tags']),
-      brand: json['brand'],
-      sku: json['sku'],
-      weight: json['weight'].toDouble(),
-      dimensions: Dimensions.fromJson(json['dimensions']),
-      warrantyInformation: json['warrantyInformation'],
-      shippingInformation: json['shippingInformation'],
-      availabilityStatus: json['availabilityStatus'],
+      id: json['id'] ?? 0,
+      title: json['title'] ?? 'No Title',
+      description: json['description'] ?? 'No Description',
+      category: json['category'] ?? 'Uncategorized',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      discountPercentage: (json['discountPercentage'] as num?)?.toDouble() ?? 0.0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      stock: (json['stock'] as num?)?.toDouble() ?? 0.0,
+      tags: List<String>.from(json['tags'] ?? []),
+      brand: json['brand'] ?? 'No Brand',
+      sku: json['sku'] ?? 'N/A',
+      weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+      dimensions: Dimensions.fromJson(json['dimensions'] ?? {}),
+      warrantyInformation: json['warrantyInformation'] ?? 'No warranty information',
+      shippingInformation: json['shippingInformation'] ?? 'No shipping information',
+      availabilityStatus: json['availabilityStatus'] ?? 'Unknown',
       reviews: List<Review>.from(
-        json['reviews'].map((review) => Review.fromJson(review)),
+        (json['reviews'] ?? []).map((review) => Review.fromJson(review)),
       ),
-      returnPolicy: json['returnPolicy'],
-      minimumOrderQuantity: json['minimumOrderQuantity'].toDouble(),
-      meta: Meta.fromJson(json['meta']),
-      images: List<String>.from(json['images']),
-      thumbnail: json['thumbnail'],
+      returnPolicy: json['returnPolicy'] ?? 'No return policy',
+      minimumOrderQuantity: (json['minimumOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+      meta: Meta.fromJson(json['meta'] ?? {}),
+      images: List<String>.from(json['images'] ?? []),
+      thumbnail: json['thumbnail'] ?? '',
     );
   }
 
@@ -218,4 +218,36 @@ class Meta {
   String toString() {
     return 'Meta(createdAt: $createdAt, updatedAt: $updatedAt, barcode: $barcode, qrCode: $qrCode)';
   }
+}
+
+
+class ProductCategory {
+  final String slug;
+  final String name;
+  final String url;
+
+  ProductCategory({
+    required this.slug,
+    required this.name,
+    required this.url,
+  });
+
+  factory ProductCategory.fromJson(Map<String, dynamic> json) {
+    return ProductCategory(
+      slug: json['slug'] ?? '',
+      name: json['name'] ?? '',
+      url: json['url'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'slug': slug,
+      'name': name,
+      'url': url,
+    };
+  }
+
+  @override
+  String toString() => 'ProductCategory(name: $name, slug: $slug)';
 }

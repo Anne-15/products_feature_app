@@ -18,18 +18,24 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration.zero, () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ProductProviders>(context, listen: false).loadCategories();
       Provider.of<ProductProviders>(context, listen: false).fetchProducts();
     });
 
     _scrollController = ScrollController();
-    _scrollController.addListener(onScroll);
+    _scrollController.addListener(_scrollListener);
   }
 
-  void onScroll() {
+  void _scrollListener() {
+    final provider = Provider.of<ProductProviders>(context, listen: false);
+
+    // Load more when 80% of the current content has been viewed
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      Provider.of<ProductProviders>(context, listen: false).fetchProducts();
+        _scrollController.position.maxScrollExtent * 0.8) {
+      if (!provider.isLoading && provider.hasMore) {
+        provider.fetchProducts();
+      }
     }
   }
 
@@ -62,53 +68,68 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(110.0),
+          preferredSize: const Size.fromHeight(150.0),
           child: Padding(
             padding: const EdgeInsets.all(10.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by name, brand or description...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
+            child: Consumer<ProductProviders>(
+              builder: (context, provider, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search by name, brand or description...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _onSearchChanged();
+                                },
+                              )
+                            : null,
+                      ),
+                      onChanged: (value) => _onSearchChanged(),
                     ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              _onSearchChanged();
-                            },
-                          )
-                        : null,
-                  ),
-                  onChanged: (value) => _onSearchChanged(),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 50,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final category = categories[index];
-                      return ChoiceChip(
-                        label: Text(category),
-                        selected: _selectedCategory == category,
-                        onSelected: (selected) {
-                          setState(() => _selectedCategory = category);
-                          _onSearchChanged();
-                        },
+                    const SizedBox(height: 10),
+                    LayoutBuilder(builder: (context, constraints) {
+                      final chipCount = provider.categories.length;
+                      const chipHeight = 40.0;
+                      const neededHeight = chipHeight + 20;
+
+                      return SizedBox(
+                        height: neededHeight,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: chipCount,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final category = provider.categories[index];
+                            return ChoiceChip(
+                              label: Text(category.name),
+                              selected: _selectedCategory == category.slug,
+                              onSelected: (selected) {
+                                setState(() => _selectedCategory = category.slug);
+                                Provider.of<ProductProviders>(context, listen: false)
+                                .filterProducts(
+                                  _searchController.text, 
+                                  category.slug
+                                );
+                              },
+                            );
+                          },
+                        ),
                       );
-                    },
-                  ),
-                ),
-              ],
+                    })
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -116,11 +137,11 @@ class _ProductsPageState extends State<ProductsPage> {
       body: Consumer<ProductProviders>(
         builder: (context, productProvider, child) {
           if (productProvider.isLoading &&
-              productProvider.filteredProducts.isEmpty) {
+              productProvider.displayedProducts.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (productProvider.filteredProducts.isEmpty) {
+          if (productProvider.displayedProducts.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -149,19 +170,23 @@ class _ProductsPageState extends State<ProductsPage> {
             );
           }
 
+          if (productProvider.products.isEmpty) {
+            return const Center(child: Text('No products available'));
+          }
+
           return RefreshIndicator(
             onRefresh: () async {
               _searchController.clear();
               setState(() => _selectedCategory = 'All');
-              await Provider.of<ProductProviders>(context, listen: false)
+              Provider.of<ProductProviders>(context, listen: false)
                 ..clearFilters()
                 ..fetchProducts();
             },
             child: GridView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(10),
-              itemCount: productProvider.filteredProducts.length +
-                  (productProvider.isLoading ? 1 : 0),
+              itemCount: productProvider.displayedProducts.length +
+                  (productProvider.hasMore ? 1 : 0),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 10,
@@ -169,11 +194,16 @@ class _ProductsPageState extends State<ProductsPage> {
                 childAspectRatio: 0.7,
               ),
               itemBuilder: (context, index) {
-                if (index == productProvider.filteredProducts.length) {
-                  return const Center(child: CircularProgressIndicator());
+                if (index >= productProvider.displayedProducts.length) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
                 }
 
-                final product = productProvider.filteredProducts[index];
+                final product = productProvider.displayedProducts[index];
                 return Card(
                   elevation: 3,
                   child: Column(
@@ -217,7 +247,8 @@ class _ProductsPageState extends State<ProductsPage> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.star, size: 16, color: Colors.amber),
+                                const Icon(Icons.star,
+                                    size: 16, color: Colors.amber),
                                 Text(
                                   ' ${product.rating.toStringAsFixed(1)}',
                                   style: const TextStyle(fontSize: 12),
